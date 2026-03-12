@@ -1,11 +1,11 @@
 import unittest
 
-from quattrocento_demo.config import DemoConfig
+from quattrocento.config import QuattrocentoConfig
 
 
-class DemoConfigTests(unittest.TestCase):
+class QuattrocentoConfigTests(unittest.TestCase):
     def test_default_mapping_uses_one_sensor_per_finger(self) -> None:
-        config = DemoConfig()
+        config = QuattrocentoConfig()
 
         self.assertEqual(len(config.finger_sensor_map), 10)
         assigned = list(config.finger_sensor_map.values())
@@ -13,7 +13,7 @@ class DemoConfigTests(unittest.TestCase):
 
     def test_duplicate_sensor_assignment_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
-            DemoConfig(
+            QuattrocentoConfig(
                 finger_sensor_map={
                     "F1": 0,
                     "F2": 0,

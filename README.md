@@ -1,24 +1,29 @@
-Quattrocento Trigger Demo
+Quattrocento Triggered Force Application
 
-A modular GUI demo app with a mocked Quattrocento stream is available at:
+A modular GUI application for capturing and analyzing force sensor data from an OT Bioelettronica Quattrocento stream.
 
-- `run_quattrocento_demo.py`
-- package: `quattrocento_demo/`
+- `run_quattrocento.py`
+- package: `quattrocento/`
 
-Run it with:
+## Usage
 
-`python run_quattrocento_demo.py`
+Run the application with:
 
-The demo uses:
+`python run_quattrocento.py`
 
-- 10 force sensors mapped one-to-one to 10 fingers
-- analog AUX-in trigger detection
-- event history with Back/Forward buttons and Left/Right arrow key navigation
+The application features:
 
-Real Quattrocento Source
-Use `--source real` and configure socket/channel settings in:
+- 10 force sensors mapped one-to-one to 10 fingers.
+- Analog AUX-in trigger detection for event-based capturing.
+- 5-second capture window after each trigger.
+- Event history with navigation (Prev/Next buttons or Left/Right arrow keys).
+- Real-time visualization of raw finger forces and peak force ranges.
 
-- `quattrocento_demo/socket_stream_config.toml`
+## Real Quattrocento Source
+
+To connect to a real device, use `--source real` and configure socket/channel settings in:
+
+- `quattrocento/socket_stream_config.toml`
 
 The TOML file exposes:
 
@@ -28,4 +33,4 @@ The TOML file exposes:
 
 Run with:
 
-`python run_quattrocento_demo.py --source real`
+`python run_quattrocento.py --source real`

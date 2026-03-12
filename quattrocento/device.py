@@ -6,7 +6,7 @@ import socket
 import numpy as np
 from numpy.typing import NDArray
 
-from .config import DemoConfig
+from .config import QuattrocentoConfig
 from .models import DataBatch
 from .protocol import NCH_BITS_TO_NUM_CHANNELS, build_quattrocento_command
 from .settings import SocketStreamSettings
@@ -28,7 +28,7 @@ class MockQuattrocentoStream(QuattrocentoStream):
 
     def __init__(
         self,
-        config: DemoConfig,
+        config: QuattrocentoConfig,
         trigger_interval_seconds: float = 8.0,
         trigger_duration_seconds: float = 0.03,
         trigger_start_delay_seconds: float = 1.0,
@@ -125,11 +125,11 @@ class MockQuattrocentoStream(QuattrocentoStream):
 class SocketQuattrocentoStream(QuattrocentoStream):
     """TCP stream client for a real Quattrocento device."""
 
-    def __init__(self, config: DemoConfig, settings: SocketStreamSettings) -> None:
+    def __init__(self, config: QuattrocentoConfig, settings: SocketStreamSettings) -> None:
         """Initialize socket stream configuration and channel mapping."""
         if config.sample_rate_hz != settings.fsamp:
             raise ValueError(
-                "DemoConfig sample_rate_hz must match socket settings fsamp "
+                "QuattrocentoConfig sample_rate_hz must match socket settings fsamp "
                 f"({config.sample_rate_hz} != {settings.fsamp})"
             )
         if settings.fsamp % 16 != 0:

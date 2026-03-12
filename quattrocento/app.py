@@ -5,8 +5,8 @@ import sys
 
 from PyQt5 import QtWidgets
 
-from .config import DemoConfig
-from .controller import DemoController
+from .config import QuattrocentoConfig
+from .controller import QuattrocentoController
 from .device import (
     MockQuattrocentoStream,
     QuattrocentoStream,
@@ -14,7 +14,7 @@ from .device import (
 )
 from .settings import SocketStreamSettings
 from .processing import TriggerWindowProcessor
-from .ui import DemoMainWindow
+from .ui import QuattrocentoMainWindow
 
 
 def load_socket_settings(path: str) -> SocketStreamSettings:
@@ -26,9 +26,9 @@ def load_socket_settings(path: str) -> SocketStreamSettings:
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse CLI arguments for the demo application."""
+    """Parse CLI arguments for the Quattrocento application."""
     parser = argparse.ArgumentParser(
-        description="Run a mocked Quattrocento trigger-based force demo GUI."
+        description="Run a mocked Quattrocento trigger-based force GUI application."
     )
     parser.add_argument(
         "--source",
@@ -69,14 +69,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--socket-config",
         type=str,
-        default="quattrocento_demo/socket_stream_config.toml",
+        default="quattrocento/socket_stream_config.toml",
         help="TOML config path for --source real.",
     )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Create and run the GUI demo event loop."""
+    """Create and run the GUI application event loop."""
     args = parse_args(argv)
 
     qt_app = QtWidgets.QApplication.instance()
@@ -86,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     stream: QuattrocentoStream
     if args.source == "real":
         socket_settings = load_socket_settings(args.socket_config)
-        config = DemoConfig(
+        config = QuattrocentoConfig(
             sample_rate_hz=socket_settings.fsamp,
             window_seconds=args.window_seconds,
             trigger_threshold=args.trigger_threshold,
@@ -96,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
             settings=socket_settings,
         )
     else:
-        config = DemoConfig(
+        config = QuattrocentoConfig(
             sample_rate_hz=args.sample_rate,
             window_seconds=args.window_seconds,
             trigger_threshold=args.trigger_threshold,
@@ -108,8 +108,8 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     processor = TriggerWindowProcessor(config)
-    window = DemoMainWindow(config.finger_labels)
-    controller = DemoController(config, stream, processor, window)
+    window = QuattrocentoMainWindow(config.finger_labels)
+    controller = QuattrocentoController(config, stream, processor, window)
     controller.start()
 
     try:

@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from quattrocento_demo.settings import SocketStreamSettings
+from quattrocento.settings import SocketStreamSettings
 
 
 class SocketSettingsTests(unittest.TestCase):

@@ -4,24 +4,24 @@ from collections import deque
 
 from PyQt5 import QtCore
 
-from .config import DemoConfig
+from .config import QuattrocentoConfig
 from .device import QuattrocentoStream
 from .models import CapturedWindow
 from .processing import TriggerWindowProcessor
-from .ui import DemoMainWindow
+from .ui import QuattrocentoMainWindow
 
 _DEFAULT_MAX_HISTORY = 200
 
 
-class DemoController(QtCore.QObject):
+class QuattrocentoController(QtCore.QObject):
     """Coordinate stream polling, trigger processing, and UI updates."""
 
     def __init__(
         self,
-        config: DemoConfig,
+        config: QuattrocentoConfig,
         stream: QuattrocentoStream,
         processor: TriggerWindowProcessor,
-        window: DemoMainWindow,
+        window: QuattrocentoMainWindow,
         max_history: int = _DEFAULT_MAX_HISTORY,
     ) -> None:
         super().__init__()

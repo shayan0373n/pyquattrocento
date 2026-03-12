@@ -5,7 +5,7 @@ from typing import Mapping
 import numpy as np
 from numpy.typing import NDArray
 
-from .config import DemoConfig
+from .config import QuattrocentoConfig
 from .models import CapturedWindow, DataBatch
 
 
@@ -21,7 +21,7 @@ def aggregate_finger_forces(
 class TriggerWindowProcessor:
     """Detect rising AUX-in edges and collect fixed post-trigger windows."""
 
-    def __init__(self, config: DemoConfig) -> None:
+    def __init__(self, config: QuattrocentoConfig) -> None:
         """Configure trigger threshold and capture window length."""
         self._window_samples = config.window_samples
         self._trigger_threshold = config.trigger_threshold

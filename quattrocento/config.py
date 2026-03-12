@@ -20,7 +20,7 @@ def _default_finger_sensor_map() -> Mapping[str, int]:
 
 
 @dataclass(slots=True)
-class DemoConfig:
+class QuattrocentoConfig:
     """Runtime configuration for stream processing and GUI update cadence."""
 
     sample_rate_hz: int = 512

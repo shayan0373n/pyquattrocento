@@ -2,14 +2,14 @@ import unittest
 
 import numpy as np
 
-from quattrocento_demo.config import DemoConfig
-from quattrocento_demo.models import DataBatch
-from quattrocento_demo.processing import TriggerWindowProcessor, aggregate_finger_forces
+from quattrocento.config import QuattrocentoConfig
+from quattrocento.models import DataBatch
+from quattrocento.processing import TriggerWindowProcessor, aggregate_finger_forces
 
 
 class TriggerWindowProcessorTests(unittest.TestCase):
     def test_capture_collects_next_window_after_rising_edge(self) -> None:
-        config = DemoConfig(sample_rate_hz=4, window_seconds=1.0)
+        config = QuattrocentoConfig(sample_rate_hz=4, window_seconds=1.0)
         processor = TriggerWindowProcessor(config)
 
         force_rows = np.array(

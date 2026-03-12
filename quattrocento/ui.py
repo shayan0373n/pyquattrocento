@@ -75,7 +75,7 @@ def _build_mirrored_bar_layout(
     return identity, tuple(finger_labels)
 
 
-class DemoMainWindow(QtWidgets.QMainWindow):
+class QuattrocentoMainWindow(QtWidgets.QMainWindow):
     """Main visualization window for trigger-captured force events."""
 
     previous_requested = QtCore.pyqtSignal()
@@ -157,7 +157,7 @@ class DemoMainWindow(QtWidgets.QMainWindow):
         )
 
     def _build_layout(self) -> None:
-        self.setWindowTitle("Quattrocento Triggered Force Demo")
+        self.setWindowTitle("Quattrocento Triggered Force Application")
         self.resize(1140, 760)
         self.setFocusPolicy(Qt.StrongFocus)
 
