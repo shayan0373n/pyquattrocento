@@ -230,6 +230,7 @@ class SocketQuattrocentoStream(QuattrocentoStream):
             tcp_socket.close()
             raise
         self._socket = tcp_socket
+        self._byte_buffer.clear()
 
     def _build_command(self, *, start_acquisition: bool) -> bytes:
         return build_quattrocento_command(
@@ -245,20 +246,39 @@ class SocketQuattrocentoStream(QuattrocentoStream):
         if self._socket is None:
             return
 
-        while True:
+        max_read_bytes = 10 * 1024 * 1024  # 10 MB limit per tick
+        bytes_read = 0
+
+        while bytes_read < max_read_bytes:
             try:
-                chunk = self._socket.recv(self._socket_read_size)
+                read_size = min(self._socket_read_size, max_read_bytes - bytes_read)
+                chunk = self._socket.recv(read_size)
             except BlockingIOError:
-                return
+                break
             except InterruptedError:
                 continue
 
             if not chunk:
+                self._socket.close()
+                self._socket = None
+                self._byte_buffer.clear()
                 raise ConnectionError("Quattrocento socket closed the connection")
 
             self._byte_buffer.extend(chunk)
-            if len(chunk) < self._socket_read_size:
-                return
+            bytes_read += len(chunk)
+
+            if len(chunk) < read_size:
+                break
+
+        max_buffer_size = 50 * 1024 * 1024  # 50 MB cap
+        if len(self._byte_buffer) > max_buffer_size:
+            excess_bytes = len(self._byte_buffer) - max_buffer_size
+            packets_to_drop = (excess_bytes + self._bytes_per_packet - 1) // self._bytes_per_packet
+            bytes_to_drop = packets_to_drop * self._bytes_per_packet
+            samples_to_drop = packets_to_drop * self._samples_per_packet
+
+            del self._byte_buffer[:bytes_to_drop]
+            self._sample_index += samples_to_drop
 
     def _empty_batch(self) -> DataBatch:
         return DataBatch(

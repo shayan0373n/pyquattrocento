@@ -11,8 +11,23 @@ nch = 3
 decimation_enabled = true
 
 # Channel selection for app processing.
+#
+# Data Layout Note:
+# The total number of channels depends on the 'nch' setting:
+#   nch=0: 120 ch | nch=1: 216 ch | nch=2: 312 ch | nch=3: 408 ch
+#
+# Regardless of nch, the channels are always ordered as:
+# 1. Signal Blocks: [0 to (Total-25)]
+# 2. AUX Inputs (1-16): [(Total-24) to (Total-9)]
+# 3. Accessory Channels (1-8): [(Total-8) to (Total-1)]
+#
+# Example (nch=3, 408 total):
+# - AUX 1 Input: 384
+# - Accessory 1 (Sample Counter): 400
+# - Accessory 2 (Trigger BNC): 401
+#
 force_channel_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-aux_in_channel_index = 10
+aux_in_channel_index = 384
 socket_read_size = 65536
 
 # INx_CONF2 and MULTIPLE_INx_CONF2 defaults.
