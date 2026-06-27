@@ -49,11 +49,22 @@ Python/PyQt5 GUI for force and EMG capture from the **OT Bioelettronica Quattroc
 
 ## Usage
 
-**Full user guide:** [USER_GUIDE.md](USER_GUIDE.md)
+See the **[User Guide](USER_GUIDE.md)** for the full workflow; per-mode launch commands are in [§2 Choosing a Connection Mode](USER_GUIDE.md#2-choosing-a-connection-mode). Run `dextview --help` for the full flag list.
 
-### Launch Examples
+### Quick start
 
-**Direct connection to the device:**
+**No hardware (bundled simulator).** Run the synthetic device in one terminal:
+```bash
+python run_simulator.py --trigger-interval 8.0
+```
+and DextView in another, connected to it in rebroadcast mode:
+```bash
+dextview --source rebroadcast \
+         --channels configs/channels_simulator.toml \
+         --host 127.0.0.1 --port 31000
+```
+
+**Real device (direct connection).**
 ```bash
 dextview --source real \
          --channels configs/channels_default.toml \
@@ -61,35 +72,6 @@ dextview --source real \
          --sample-rate 2048 --n-channels 16 \
          --conf2-config configs/quattrocento_conf2.toml
 ```
-
-**Rebroadcast via OT BioLab+ (auto-detected parameters):**
-```bash
-dextview --source rebroadcast \
-         --channels configs/channels_default.toml \
-         --host 127.0.0.1 --port 31000 \
-         --sample-rate auto --n-channels auto \
-         --log-dir ./capture_logs
-```
-
-**Proxy mode (tap stream while OT BioLab+ records):**
-```bash
-dextview --source proxy \
-         --channels configs/channels_default.toml \
-         --host 169.254.1.10 --port 23456 \
-         --proxy-listen-host 127.0.0.1 --proxy-listen-port 31001
-```
-
-**Local dry run with the bundled simulator** (terminal 1 runs the synthetic device, terminal 2 runs DextView):
-```bash
-python run_simulator.py --trigger-interval 8.0
-```
-```bash
-dextview --source rebroadcast \
-         --channels configs/channels_default.toml \
-         --host 127.0.0.1 --port 31000
-```
-
-Run `dextview --help` for the full flag list.
 
 ---
 
@@ -105,36 +87,14 @@ python -m pytest
 ## Repository Architecture
 
 ```
-├── configs/                     # TOML configuration files
-│   ├── channels_default.toml    # Default 10-finger + EMG + Trigger mapping
-│   └── quattrocento_conf2.toml  # Input-block hardware configurations (HPF/LPF/modes)
-├── dextview/                    # Core Python package
-│   ├── hooks/                   # Low-latency feedback hooks and HUD widgets
-│   │   ├── __init__.py
-│   │   ├── compositors.py       # Hook coordination logic
-│   │   ├── logic.py             # LabJack TTL pulse driver and state machines
-│   │   └── ui.py                # Hook visual progress and target HUD dialogs
-│   ├── stream/                  # Data access streams
-│   │   ├── __init__.py
-│   │   ├── _io.py               # Raw TCP socket abstractions
-│   │   ├── direct.py            # Device direct interface
-│   │   ├── parser.py            # int16 TCP frame decoding
-│   │   ├── proxy.py             # Upstream client/device proxy tapping
-│   │   └── rebroadcast.py       # Rebroadcast receiver
-│   ├── app.py                   # Application entry point & CLI parsing
-│   ├── capture_log.py           # JSON event recording hook
-│   ├── channels.py              # Channels parser and mapping logic
-│   ├── config.py                # Application state parameters
-│   ├── controller.py            # Middleman orchestrator (wires model to view)
-│   ├── models.py                # Shared data structures and protocol definitions
-│   ├── processing.py            # Signal processing and trigger detection logic
-│   ├── protocol.py              # Quattrocento network communication specifications
-│   ├── rebroadcast_detect.py    # Auto-discovery of rebroadcast parameters
-│   ├── settings.py              # Hardware command configuration builders
-│   ├── simulator.py             # Standalone Quattrocento TCP server simulator
-│   └── ui.py                    # Main PyQt5 layouts, charts, and monitors
-├── tests/                       # Unit and integration tests
-├── pyproject.toml               # Python package metadata and scripts
-├── run_dextview.py              # Convenience script to run the GUI
-└── run_simulator.py             # Convenience script to run the simulator
+├── configs/          # TOML config: channel maps and hardware (conf2) settings
+├── dextview/         # Core Python package (stream I/O, processing, hooks, PyQt5 UI)
+│   ├── hooks/        # Low-latency feedback hooks and HUD widgets
+│   └── stream/       # Connection sources: direct, rebroadcast, proxy
+├── tests/            # Unit and integration tests
+├── pyproject.toml    # Package metadata and the `dextview` entry point
+├── run_dextview.py   # Convenience script to run the GUI
+└── run_simulator.py  # Convenience script to run the simulator
 ```
+
+Within `dextview/`, the flow runs roughly `app.py` (entry point and CLI) → `controller.py` (wiring) → `stream/`, `processing.py`, `hooks/`, and `ui.py`.

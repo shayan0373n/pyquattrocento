@@ -1,12 +1,12 @@
 # DextView User Guide
 
-Usage guide for DextView. For installation, architecture, and CLI reference, see [README.md](README.md).
+Usage guide for DextView. For installation and architecture, see [README.md](README.md).
 
 ---
 
 ## 1. Before You Start
 
-*One short paragraph orienting the reader: what DextView does in plain language (capture force + EMG around trigger events, with calibration and optional hardware feedback), and what a typical session looks like end-to-end.*
+DextView captures fixed-length windows of force and EMG around analog trigger events from a Quattrocento amplifier. Signals can be calibrated against rest and maximum-voluntary-contraction (MVC) references so force is read in % MVC. Captured windows are plotted per finger and, when `--log-dir` is set, written to JSON; a feedback hook can additionally fire a LabJack TTL pulse when a force condition is met. A full session runs end-to-end as listed under **Session at a glance** below.
 
 **You will need:**
 - A computer with DextView installed (see README → Installation).
@@ -39,7 +39,17 @@ DextView supports three connection modes:
 *DextView connects straight to the Quattrocento hardware.*
 
 - **Use when:** lowest latency is required and OT BioLab+ is not needed.
-- **Setup:** *(launch command — `--host`/`--port` at the device, plus `--sample-rate`, `--n-channels`, and optionally `--conf2-config` for hardware input-block settings).*
+- **Setup:**
+  1. Launch DextView with `--source real`, `--host`/`--port` pointed at the device, an explicit `--sample-rate` (one of 512, 2048, 5120, 10240 Hz — `auto` is rejected here), and `--n-channels`.
+  2. `--n-channels` is the *minimum* you need; the device rounds up to the next supported group (120, 216, 312, or 408 channels), and your TOML indices must fall within that rounded-up width.
+  3. Optionally pass `--conf2-config` for per-input-block HPF/LPF/mode/side, `--rec-on` to enable on-device recording, and `--no-decimation` to sample directly instead of decimating from 10240 Hz.
+
+  ```bash
+  dextview --source real --channels configs/channels_default.toml \
+           --host 169.254.1.10 --port 23456 \
+           --sample-rate 2048 --n-channels 16 \
+           --conf2-config configs/quattrocento_conf2.toml
+  ```
 - **Channel ordering:** the last 24 channels in the stream are always the 16 AUX channels followed by the 8 accessory channels — TOML channel indices must account for this.
 - **Tradeoffs:** lowest latency; hardware must be configured manually.
 
@@ -47,7 +57,16 @@ DextView supports three connection modes:
 *DextView listens to a stream that OT BioLab+ is broadcasting locally.*
 
 - **Use when:** OT BioLab+ is already handling hardware configuration and DextView only needs to overlay its analysis.
-- **Setup:** *(start OT BioLab+ → enable rebroadcast → launch DextView pointed at `127.0.0.1:31000`).*
+- **Setup:**
+  1. In OT BioLab+, start acquisition and enable the local rebroadcast/TCP output (default port `31000`).
+  2. Launch DextView with `--source rebroadcast` and `--host 127.0.0.1 --port 31000`.
+  3. Leave `--n-channels` and `--sample-rate` unset (both default to `auto` in this mode) to read them from the stream header, or pass explicit integers if you already know them.
+
+  ```bash
+  dextview --source rebroadcast --channels configs/channels_default.toml \
+           --host 127.0.0.1 --port 31000 \
+           --sample-rate auto --n-channels auto --log-dir ./capture_logs
+  ```
 - **Auto-detection:** set `--n-channels auto` and `--sample-rate auto` to read these from the OT BioLab+ stream header.
 - **Channel ordering:** indices match the channels activated in OT BioLab+, with the last 8 channels always being the accessory channels. **Changing OT BioLab+'s channel selection requires updating the TOML mapping.**
 - **Tradeoffs:** easiest setup; rebroadcast adds buffering delay — not ideal for time-sensitive hooks.
@@ -60,25 +79,32 @@ DextView supports three connection modes:
   1. Launch DextView in proxy mode with `--host` pointing at the device and `--proxy-listen-host`/`--proxy-listen-port` set to a local address.
   2. In OT BioLab+, change the target device IP to the proxy address (typically `127.0.0.1`).
   3. Start acquisition in OT BioLab+. It connects to DextView, which forwards to the device.
+
+  ```bash
+  dextview --source proxy --channels configs/channels_default.toml \
+           --host 169.254.1.10 --port 23456 \
+           --proxy-listen-host 127.0.0.1 --proxy-listen-port 31001
+  ```
 - **Channel ordering:** same as Direct mode.
 - **Tradeoffs:** OT BioLab+ records normally and DextView gets first-hand data; requires reconfiguring OT BioLab+'s target IP.
 
 ### 2.4 Simulator (dry run)
-*A bundled fake device that emits dummy force, EMG, and trigger signals.*
+*A bundled fake device that emits synthetic force and trigger signals; all other channels carry low-amplitude noise.*
 
 - **Use when:** practicing the workflow, demoing, or testing without hardware.
-- **Setup:** run `python run_simulator.py --trigger-interval 8.0` in one terminal, then launch DextView in `rebroadcast` mode pointed at `127.0.0.1:31000`.
+- **Setup:** run `python run_simulator.py --trigger-interval 8.0` in one terminal, then launch DextView in `rebroadcast` mode with `--channels configs/channels_simulator.toml` pointed at `127.0.0.1:31000`.
+- **Channel mapping:** the simulator always streams a fixed layout — synthetic force on channels 0–9 and the trigger pulse on channel 10. `configs/channels_simulator.toml` matches this layout. The bundled `configs/channels_default.toml` is an example mapping from a real recording and does **not** line up, so triggers will not fire if you use it here.
 
 ---
 
 ## 3. Channel Configuration
 
-*What the TOML file actually does, and when you need to touch it.*
+The `--channels` TOML maps each stream channel index to a label, a kind, and a `scale`. It is read once at launch. Exactly one channel must be `kind = "trigger"`, and the main window requires exactly 10 `finger` channels. Indices must be valid for the stream width, and the mapping is acquisition-specific — it changes whenever the set of active channels changes, so treat the bundled config as a worked example rather than a universal default.
 
-- **Channel kinds:** `finger` (force, typically 10), `emg` (muscle activity), `trigger` (AUX channel that fires capture events).
-- **`scale` field:** converts raw int16 samples into physical units. *(Brief note on units; full formula in README.)*
-- **Edit the TOML when:** OT BioLab+'s active channels change (rebroadcast mode) or sensors are rewired.
-- **Swapping configs without restarting:** *(if/how that's supported — TBD: confirm).*
+- **Channel kinds:** `finger` (force, exactly 10), `emg` (muscle activity, optional), `trigger` (the AUX channel that fires capture events; exactly one).
+- **`scale` field:** converts raw int16 counts to physical units. The full-scale int16 range maps to ±`scale`, i.e. `physical = raw / 32768 × scale`. The unit is whatever the recording uses — `scale` is just a multiplier (see §7.1). Defaults to `1.0` if omitted.
+- **Edit the TOML when:** the active channels change (e.g. OT BioLab+'s channel selection in rebroadcast mode) or sensors are rewired.
+- **Swapping configs without restarting:** not supported. The channel mapping is read once from `--channels` at launch; changing it requires relaunching DextView. (Calibration, by contrast, can be saved and loaded at runtime via the **Cal ▾** menu — see §4.4.)
 
 ---
 
@@ -114,7 +140,7 @@ Open these *before* starting captures so you can confirm the signal looks right.
 
 *When the trigger channel crosses threshold, DextView automatically captures a fixed-length window.*
 
-- **Window length and pre-trigger offset** are set on the command line (`--window-seconds`, `--window-offset`). *(Pointer to the table in README.)*
+- **Window length and pre-trigger offset** are set on the command line (`--window-seconds`, `--window-offset`); run `dextview --help` for these and the other flags.
 - The main visualizer plots all 10 finger profiles with P2P readouts and auto-detected onset markers.
 
 ### 5.3 Onset Markers
@@ -176,14 +202,14 @@ Plot readouts and threshold hooks use this normalized value.
 
 ## 8. Troubleshooting
 
-*Short list, one-paragraph each — to be filled in based on actual common failures.*
+Common issues and where to look first:
 
 - **DextView won't connect** — wrong mode, wrong host/port, OT BioLab+ not started yet, firewall.
-- **No captures firing** — trigger channel wrong in TOML, threshold too high, no signal on AUX.
+- **No captures firing** — trigger channel wrong in TOML, threshold too high, no signal on AUX. With the simulator, use `configs/channels_simulator.toml` (trigger on index 10 — see §2.4).
 - **Force values look wrong / clipped** — channel ordering off in TOML (especially after changing OT BioLab+ config), wrong `scale`, wrong sensor wired to wrong input.
 - **% MVC toggle is greyed out** — MVC calibration not yet completed this session.
 - **Hooks not firing the TTL** — LabJack not detected (connect before launch), or threshold conditions never met.
-- **`auto` sample-rate/n-channels fails** — only supported in rebroadcast mode; supply explicit values for direct/proxy.
+- **`auto` sample-rate/n-channels fails** — only supported in rebroadcast mode. For direct, supply explicit values; for proxy, both are read from the wire and these flags are unused.
 
 ---
 
@@ -201,16 +227,4 @@ Plot readouts and threshold hooks use this normalized value.
 
 ## 10. CLI Reference
 
-| Flag | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--source` | `str` | *Required* | Data source type: `real`, `rebroadcast`, or `proxy`. |
-| `--channels` | `str` | *Required* | Path to the TOML channel mapping file. |
-| `--host` | `str` | `None` | TCP hostname/IP for the device or rebroadcast server. |
-| `--port` | `int` | `None` | TCP port for the device or rebroadcast server. |
-| `--window-seconds` | `float` | `5.0` | Total length in seconds of the event-captured window. |
-| `--window-offset` | `float` | `0.0` | Pre-trigger offset in seconds (e.g., `-1.0` to capture 1.0s before the trigger). |
-| `--trigger-threshold`| `float` | `0.5` | Threshold for detecting manual analog trigger events (physical units). |
-| `--sample-rate` | `int/str`| `None` | Sampling rate in Hz (e.g., `2048`, `10244`). `auto` for rebroadcast. |
-| `--n-channels` | `int/str`| `None` | Number of channels per frame. `auto` for rebroadcast. |
-| `--log-dir` | `str` | `None` | Directory path where captured events will be written as JSON. |
-| `--conf2-config` | `str` | `None` | Optional hardware input-block settings file (real source only). |
+Run `dextview --help` for the full list of flags, types, and defaults. Which flags matter for each connection mode is covered in [§2 Choosing a Connection Mode](#2-choosing-a-connection-mode).
