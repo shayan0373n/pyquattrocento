@@ -161,9 +161,9 @@ class _Hook(Protocol):
 class StreamHook(_Hook, Protocol):
     """Hook called with every live data batch.
 
-    Data contract: `batch.signals` contains raw 16-bit counts for all device
-    channels. `meta.baseline` and `meta.peak` are also in raw 16-bit counts.
-    Hooks requiring %-normalised values must perform their own scaling.
+    Data contract: `batch.signals`, `meta.baseline`, and `meta.peak` are all in
+    physical units (raw 16-bit count / 32768 × the channel's scale). Hooks
+    requiring %-normalised values compute them from baseline and peak.
     """
 
     def __call__(self, batch: DataBatch, meta: StreamMeta) -> None: ...

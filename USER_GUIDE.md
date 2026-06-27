@@ -180,14 +180,14 @@ Each event JSON contains:
 - Baseline, MVC, and zero calibration arrays at the time of capture.
 - Full timestamp and signal arrays for the captured window.
 
-### 7.1 Physical Unit Scaling
-Logged signal arrays contain 16-bit signed integers. Convert to physical units with:
+### 7.1 Signal Units
+Logged signal and calibration arrays are already in physical units: each raw 16-bit count has been divided by 32768 and multiplied by the channel's `scale`,
 
 $$
-\text{Signal}_{\text{physical}} = \frac{\text{Raw}_{\text{int16}}}{32768} \times \text{scale}
+\text{Signal}_{\text{physical}} = \frac{\text{Raw}_{\text{int16}}}{32768} \times \text{scale},
 $$
 
-where `scale` is the channel-specific conversion factor from the `--channels` TOML.
+so no further conversion is needed. The per-channel `scale` is recorded under `channels` in each JSON file.
 
 ### 7.2 MVC Normalization
 Once rest and MVC calibrations are complete, normalized force is:

@@ -54,6 +54,7 @@ class ProxyStream:
         window_offset_seconds: float,
         trigger_threshold: float,
         trigger_channel: int,
+        channel_scales: dict[int, float],
     ) -> "ProxyStream":
         """Listen for an upstream client, sniff its start command, and connect to the device.
 
@@ -105,6 +106,7 @@ class ProxyStream:
             window_offset_seconds=window_offset_seconds,
             trigger_threshold=trigger_threshold,
             trigger_channel=trigger_channel,
+            channel_scales=channel_scales,
         )
         return cls(config, client_sock=client_sock, origin_sock=origin_sock)
 

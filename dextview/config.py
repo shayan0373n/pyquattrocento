@@ -13,6 +13,10 @@ class DextViewConfig:
     trigger_threshold: float = 0.5
     trigger_channel: int = 0
     ui_refresh_ms: int = 30
+    # NOTE: redundant with the per-channel scale already held in the Channels
+    # map; FrameParser is its only consumer. A cleaner design derives the
+    # parser's scale vector straight from Channels (one source of truth) and
+    # drops this field.
     channel_scales: dict[int, float] | None = None
 
     def __post_init__(self) -> None:

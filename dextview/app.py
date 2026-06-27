@@ -280,6 +280,7 @@ def _build_proxy_stream(
         raise SystemExit("--host and --port are required for --source=proxy (the device)")
 
     trigger_channel = channels.by_kind(ChannelKind.TRIGGER).indices[0]
+    channel_scales = {idx: ch.scale for idx, ch in channels.items()}
 
     try:
         stream = ProxyStream.listen_and_accept(
@@ -291,6 +292,7 @@ def _build_proxy_stream(
             window_offset_seconds=args.window_offset_seconds,
             trigger_threshold=args.trigger_threshold,
             trigger_channel=trigger_channel,
+            channel_scales=channel_scales,
         )
     except (ConnectionError, ValueError) as exc:
         raise SystemExit(str(exc)) from exc
